@@ -1,0 +1,7 @@
+*.swp
+*.gbc
+*.sn*
+*.sym
+*.map
+*.o
+*.2bpp
