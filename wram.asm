@@ -30,6 +30,8 @@ SECTION "Virtual OAM", WRAM0, ALIGN[8]
 wVirtualOAM:: ds 40 * 4
 
 SECTION "HRAM", HRAM[$ff80]
+hCGB:: db
+hSGB:: db
 hTempBank:: db
 hBGMapSection:: db
 hSPStore:: dw

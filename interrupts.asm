@@ -30,6 +30,9 @@ VBlank_CopyTilemap:
 	jr VBlank_CopyTileAttrmap
 
 VBlank_CopyAttrmap:
+	ldh a, [hCGB]
+	and a
+	ret z
 	ld a, 1
 	ldh [rVBK], a
 	ld bc, wAttrmap
@@ -82,9 +85,44 @@ ENDR
 	ret
 
 LCD::
+	ld a, [wGameState]
+	cp GAME_STATE_TITLE
+	jr z, .done
+	ldh a, [rLY]
+	cp 112
+	jr c, .s0
+	cp 124
+	jr c, .s1
+	cp 132
+	jr c, .s2
+	jr nc, .s3
+.s0
+	xor a
+	ldh [rSCX], a
+	ldh [rSCY], a
+	jr .done
+
+.s1
+	ld a, 4
+	ldh [rSCX], a
+	ldh [rSCY], a
+	jr .done
+
+.s2
+	xor a
+	ldh [rSCX], a
 	ld a, 4
 	ldh [rSCY], a
+	jr .done
+
+.s3
+	ld a, -4
 	ldh [rSCX], a
+	ld a, 4
+	ldh [rSCY], a
+	jr .done
+
+.done
 	pop af
 	reti
 

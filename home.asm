@@ -66,7 +66,28 @@ Start::
 	ds $150 - @
 _Start::
 	cp $11
-	jr nz, .not_cgb_spin
+	jr z, .cgb
+	ld a, c
+	cp $14
+	jr z, .sgb
+	xor a
+	ldh [hCGB], a
+	ldh [hSGB], a
+	jr .done_hw_detect
+
+.sgb
+	ld a, 1
+	ldh [hSGB], a
+	xor a
+	ldh [hCGB], a
+	jr .done_hw_detect
+
+.cgb
+	ld a, 1
+	ldh [hCGB], a
+	xor a
+	ldh [hSGB], a
+.done_hw_detect
 ; disable lcd
 	call DisableLCD
 ; clear wram
@@ -82,8 +103,8 @@ _Start::
 ; init stack pointer
 	ld sp, wStackBottom
 ; clear hram
-	ld hl, $ff80
-	ld bc, $007f
+	ld hl, $ff82
+	ld bc, $007d
 	xor a
 	call ByteFill
 
@@ -98,14 +119,7 @@ _Start::
 	call InitGraphics
 
 ; set double speed mode
-	ld hl, rKEY1
-	set 0, [hl]
-	xor a
-	ldh [rIF], a
-	ldh [rIE], a
-	ld a, $30
-	ldh [rJOYP], a
-	stop
+	call SetDoubleSpeed
 
 ; enable vblank interrupt
 	xor a
@@ -113,7 +127,7 @@ _Start::
 	ld a, (1 << VBLANK) | (1 << LCD_STAT)
 	ldh [rIE], a
 	ld hl, rSTAT
-	set 6, [hl]
+	set 3, [hl]
 	ld a, 104
 	ldh [rLYC], a
 	ei
@@ -162,6 +176,20 @@ hTransferVirtualOAM::
 	ret
 ENDL
 OAMDMACodeEnd:
+
+SetDoubleSpeed:
+	ldh a, [hCGB]
+	and a
+	ret z
+	ld hl, rKEY1
+	set 0, [hl]
+	xor a
+	ldh [rIF], a
+	ldh [rIE], a
+	ld a, $30
+	ldh [rJOYP], a
+	stop
+	ret
 
 EnableLCD::
 	ldh a, [rLCDC]
@@ -652,22 +680,22 @@ UpdateCursorXY:
 	db 122, 131
 	db 138, 131
 	db 154, 131
-	db  10, 139
-	db  26, 139
-	db  42, 139
-	db  58, 139
-	db  74, 139
-	db  90, 139
-	db 106, 139
-	db 122, 139
-	db 138, 139
-	db  10, 147
-	db  26, 147
-	db  42, 147
-	db  58, 147
-	db  74, 147
-	db  90, 147
-	db 106, 147
+	db  14, 139
+	db  30, 139
+	db  46, 139
+	db  62, 139
+	db  78, 139
+	db  94, 139
+	db 110, 139
+	db 126, 139
+	db 142, 139
+	db  18, 147
+	db  34, 147
+	db  50, 147
+	db  66, 147
+	db  82, 147
+	db  98, 147
+	db 114, 147
 
 PutCursorOAM:
 	ld hl, .OAMData
@@ -1052,12 +1080,13 @@ QWERTYTilemap::
 	db "@Z@X@C@V@B@N@M@@@@@@"
 ABCDEFTilemap::
 	db "@A@B@C@D@E@F@G@H@I@J"
-	db "@K@L@M@N@O@P@Q@R@S@T"
+	db "@K@L@M@N@O@P@Q@R@S@@"
 	db "@T@U@V@W@X@Y@Z@@@@@@"
 
 CursorGFX:: INCBIN "gfx/cursor.2bpp"
 
 TitleTiles::   INCBIN "gfx/title.2bpp"
+Title2Tiles::  INCBIN "gfx/title2.2bpp"
 TitleTilemap:: INCBIN "gfx/title.tilemap"
 TitleAttrmap:: INCBIN "gfx/title.attrmap"
 

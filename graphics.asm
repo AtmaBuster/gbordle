@@ -1,5 +1,7 @@
 InitGraphics::
 	call DisableLCD
+	xor a
+	ldh [rVBK], a
 ; load 8x8 letters
 	ld hl, Font8x8
 	ld de, $9010
@@ -16,16 +18,15 @@ InitGraphics::
 	ld bc, 4 * $10
 	call CopyBytes
 ; load title
-	ld a, 1
-	ldh [rVBK], a
-	ld hl, TitleTiles
-	ld de, $9000
-	ld bc, 114 * $10
+	ld hl, TitleTiles + $10 * 13
+	ld de, $91d0
+	ld bc, 99 * $10
 	call CopyBytes
-	xor a
-	ldh [rVBK], a
-	call EnableLCD
-	ret
+	ld hl, Title2Tiles
+	ld de, $8ec0
+	ld bc, 15 * $10
+	call CopyBytes
+	jp EnableLCD
 
 ResetBoardTilemap::
 	ld hl, MainBoardTilemap

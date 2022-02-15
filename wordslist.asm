@@ -4481,7 +4481,7 @@ GuessWordlist_F::
 	db "FOYNE@"
 
 .List_FR:
-	db 68
+	db 69
 	db "FRABS@"
 	db "FRACK@"
 	db "FRACT@"
@@ -4517,6 +4517,7 @@ GuessWordlist_F::
 	db "FRIED@"
 	db "FRIER@"
 	db "FRIES@"
+	db "FRIGO@"
 	db "FRIGS@"
 	db "FRILL@"
 	db "FRISE@"
@@ -15525,6 +15526,7 @@ ValidGameWords::
 	db "FRESH@"
 	db "FRIAR@"
 	db "FRIED@"
+	db "FRIGO@"
 	db "FRILL@"
 	db "FRISK@"
 	db "FRITZ@"
