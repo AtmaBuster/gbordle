@@ -108,6 +108,8 @@ _Start::
 	xor a
 	call ByteFill
 
+	call ClearDMGSGBColors
+
 	ld hl, rLCDC
 	res rLCDC_TILE_DATA, [hl]
 	set rLCDC_SPRITE_SIZE, [hl]
@@ -137,11 +139,25 @@ _Start::
 	ld de, wTilemap
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
 	call CopyBytes
+	ldh a, [hCGB]
+	and a
+	jr z, .check_sgb
 	ld hl, TitleAttrmap
 	ld de, wAttrmap
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
 	call CopyBytes
+	jr .finish_title
 
+.check_sgb
+	ldh a, [hSGB]
+	and a
+	jr z, .finish_title ; DMG
+	call SetupSGB
+	ld hl, SGBPacket_Title
+	call SendSGBPackets
+
+.finish_title
+	call ResetDMGSGBColors
 ; init RNG
 	ld a, 1
 	ldh [hRandomA], a
@@ -320,24 +336,9 @@ PlaceBigLetter:
 ; b, c = x, y
 ; d    = color
 	push af
-	ld a, c
-	ld hl, SCREEN_WIDTH
-	call MulHL_A
-	ld c, b
-	ld b, 0
-	add hl, bc
-	ld b, h
-	ld c, l
-	ld hl, wAttrmap
-	add hl, bc
-	ld a, d
-	ld [hli], a
-	ld [hl], a
-	ld de, SCREEN_WIDTH - 1
-	add hl, de
-	ld [hli], a
-	ld [hl], a
+	call .do_palette
 	pop af
+	call BCtoMapOffset
 	ld hl, wTilemap
 	add hl, bc
 	dec a
@@ -348,10 +349,91 @@ PlaceBigLetter:
 	inc a
 	ld [hl], a
 	inc a
+	ld de, SCREEN_WIDTH - 1
 	add hl, de
 	ld [hli], a
 	inc a
 	ld [hl], a
+	ret
+
+.do_palette
+	ldh a, [hCGB]
+	and a
+	jr nz, .cgb
+	ldh a, [hSGB]
+	and a
+	ret z ; DMG
+; sgb
+	call InitWRAMBlkPacket
+	ld a, b
+	ld [wSGBAttrPacketBuffer + 4], a
+	inc a
+	ld [wSGBAttrPacketBuffer + 6], a
+	ld a, c
+	ld [wSGBAttrPacketBuffer + 5], a
+	inc a
+	ld [wSGBAttrPacketBuffer + 7], a
+	ld a, d
+	add a
+	add a
+	or d
+	ld [wSGBAttrPacketBuffer + 3], a
+	ld hl, wSGBAttrPacketBuffer
+	push bc
+	call SendSGBPackets
+	pop bc
+	ret
+
+.cgb
+	push bc
+	call BCtoMapOffset
+	ld hl, wAttrmap
+	add hl, bc
+	ld a, d
+	ld [hli], a
+	ld [hl], a
+	ld de, SCREEN_WIDTH - 1
+	add hl, de
+	ld [hli], a
+	ld [hl], a
+	pop bc
+	ret
+
+BCtoMapOffset:
+	push af
+	push hl
+	ld a, c
+	ld hl, SCREEN_WIDTH
+	call MulHL_A
+	ld c, b
+	ld b, 0
+	add hl, bc
+	ld b, h
+	ld c, l
+	pop hl
+	pop af
+	ret
+
+PlaceExtraIndicator:
+; a    = char to place
+; b, c = x, y
+; d    = color
+	push af
+	ld a, c
+	ld hl, SCREEN_WIDTH
+	call MulHL_A
+	ld c, b
+	ld b, 0
+	add hl, bc
+	ld b, h
+	ld c, l
+	ld hl, wAttrmap
+	add hl, bc
+	ld [hl], d
+	pop af
+	ld hl, wTilemap
+	add hl, bc
+	ld [hli], a
 	ret
 
 INCLUDE "interrupts.asm"
@@ -560,6 +642,26 @@ GameLoop::
 	add hl, bc
 	ld bc, 10
 	call ByteFill
+; set helper icons
+	ld a, [wCurrentGuess]
+	add a
+	add 2
+	ld hl, SCREEN_WIDTH
+	call MulHL_A
+	ld bc, 15
+	add hl, bc
+	push hl
+	ld bc, wAttrmap
+	add hl, bc
+	ld a, 1
+	ld bc, 5
+	call ByteFill
+	pop hl
+	ld bc, wTilemap
+	add hl, bc
+	ld a, $fd
+	ld bc, 5
+	call ByteFill
 ; show win string
 	hlcoord 6, 0
 	ld de, YouWinString
@@ -755,6 +857,10 @@ PlaceString:
 	ld a, [de]
 	cp "@"
 	ret z
+	cp " "
+	jr nz, .put
+	xor a
+.put
 	ld [hli], a
 	inc de
 	jr .loop
@@ -890,6 +996,18 @@ GiveWordFeedback:
 	push de
 	push bc
 	push af
+	push bc
+	ld a, c
+	add 15
+	ld b, a
+	ld a, [wCurrentGuess]
+	add a
+	add 2
+	ld c, a
+	ld a, $ff
+	ld d, 3
+	call PlaceExtraIndicator
+	pop bc
 	ld a, c
 	add a
 	add 5
@@ -933,6 +1051,18 @@ GiveWordFeedback:
 	push de
 	push bc
 	push af
+	push bc
+	ld a, c
+	add 15
+	ld b, a
+	ld a, [wCurrentGuess]
+	add a
+	add 2
+	ld c, a
+	ld a, $fd
+	ld d, 1
+	call PlaceExtraIndicator
+	pop bc
 	ld b, 0
 	ld hl, wMarkedGreenLetters
 	add hl, bc
@@ -1018,6 +1148,18 @@ endr
 	push de
 	push bc
 	push af
+	push bc
+	ld a, c
+	add 15
+	ld b, a
+	ld a, [wCurrentGuess]
+	add a
+	add 2
+	ld c, a
+	ld a, $fe
+	ld d, 2
+	call PlaceExtraIndicator
+	pop bc
 	ld a, c
 	add a
 	add 5
@@ -1053,6 +1195,13 @@ TitleScreen:
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT * 2
 	xor a
 	call ByteFill
+	ldh a, [hSGB]
+	and a
+	ret z
+	call ClearDMGSGBColors
+	ld hl, SGBPacket_Game
+	call SendSGBPackets
+	call ResetDMGSGBColors
 	ret
 
 NotLongEnoughString:
@@ -1070,6 +1219,7 @@ YouLostString:
 SECTION "Graphics", ROM0
 Font8x8::     INCBIN "gfx/font8.2bpp"
 Font16x16::   INCBIN "gfx/font16.2bpp"
+HelpChars::   INCBIN "gfx/helpchars.2bpp"
 
 MainBoardTilemap:: INCBIN "gfx/mainscreen.tilemap"
 MainBoardAttrmap:: INCBIN "gfx/mainscreen.attrmap"

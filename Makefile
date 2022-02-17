@@ -39,7 +39,7 @@ $(foreach obj, $(game_obj), $(eval $(call DEP,$(obj),$(obj:.o=.asm))))
 
 endif
 
-fix_opt = -Cjv -t WORDLE -i WRDL -n 0 -k 00 -l 0x33 -m 0x19 -r 0 -p 0
+fix_opt = -scjv -t WORDLE -i WRDL -n 0 -k 00 -l 0x33 -m 0x19 -r 0 -p 0
 
 wordle.gbc: $(game_obj) layout.link
 	$(RGBLINK) -n wordle.sym -m wordle.map -l layout.link -o $@ $(filter %.o,$^)

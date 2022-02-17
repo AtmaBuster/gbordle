@@ -26,6 +26,8 @@ wKeyboardCursorOAMX:: db
 wHiddenWordLetterCount:: ds 26
 wMarkedGreenLetters:: ds 5
 
+wSGBAttrPacketBuffer:: ds 16
+
 SECTION "Virtual OAM", WRAM0, ALIGN[8]
 wVirtualOAM:: ds 40 * 4
 

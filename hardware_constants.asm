@@ -53,6 +53,8 @@ PRIORITY     EQU 1 << OAM_PRIORITY  ; $80
 
 ; Hardware registers
 rJOYP       EQU $ff00 ; Joypad (R/W)
+rJOYP14 EQU %00010000
+rJOYP15 EQU %00100000
 rSB         EQU $ff01 ; Serial transfer data (R/W)
 rSC         EQU $ff02 ; Serial Transfer Control (R/W)
 rSC_ON      EQU 7
