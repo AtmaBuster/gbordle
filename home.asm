@@ -1343,8 +1343,5 @@ ABCDEFTilemap::
 CursorGFX:: INCBIN "gfx/cursor.2bpp"
 
 TitleTiles::   INCBIN "gfx/title.2bpp"
-Title2Tiles::  INCBIN "gfx/title2.2bpp"
-TitleTilemap:: INCBIN "gfx/title.tilemap"
-TitleAttrmap:: INCBIN "gfx/title.attrmap"
 
 INCLUDE "graphics.asm"
