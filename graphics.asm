@@ -5,12 +5,7 @@ InitGraphics::
 ; load 8x8 letters
 	ld hl, Font8x8
 	ld de, $9010
-	ld bc, 28 * $10
-	call CopyBytes
-; load 16x16 letters
-	ld hl, Font16x16
-	ld de, $8800
-	ld bc, 27 * $10 * 4
+	ld bc, 56 * $10
 	call CopyBytes
 ; load cursor
 	ld hl, CursorGFX
@@ -18,18 +13,25 @@ InitGraphics::
 	ld bc, 4 * $10
 	call CopyBytes
 ; load title
-	ld hl, TitleTiles + $10 * 13
-	ld de, $91d0
-	ld bc, 99 * $10
-	call CopyBytes
-	ld hl, Title2Tiles
-	ld de, $8ec0
-	ld bc, 15 * $10
+	ld hl, TitleTiles
+	ld de, $8800
+	ld bc, 80 * $10
 	call CopyBytes
 ; load circle, triangle, x
 	ld hl, HelpChars
 	ld de, $8fd0
 	ld bc, 3 * $10
+	call CopyBytes
+	jp EnableLCD
+
+LoadLetterTiles:
+	call DisableLCD
+; load 16x16 letters
+	xor a
+	ldh [rVBK], a
+	ld hl, Font16x16
+	ld de, $8800
+	ld bc, 27 * $10 * 4
 	call CopyBytes
 	jp EnableLCD
 

@@ -25,10 +25,13 @@ D_DOWN   EQU %10000000
 R_DPAD    EQU %00100000
 R_BUTTONS EQU %00010000
 
-GAME_STATE_TITLE EQU 0
-GAME_STATE_START EQU 1
-GAME_STATE_GUESS EQU 2
-GAME_STATE_OVER  EQU 3
+GAME_STATE_INIT_TITLE   EQU 0
+GAME_STATE_TITLE        EQU 1
+GAME_STATE_INIT_CREDITS EQU 2
+GAME_STATE_CREDITS      EQU 3
+GAME_STATE_START        EQU 4
+GAME_STATE_GUESS        EQU 5
+GAME_STATE_OVER         EQU 6
 
 ; charmap
 	charmap "@", $00
@@ -60,3 +63,31 @@ GAME_STATE_OVER  EQU 3
 	charmap "Z", $1a
 	charmap " ", $1b
 	charmap ":", $1c
+	charmap "a", $1d
+	charmap "b", $1e
+	charmap "c", $1f
+	charmap "d", $20
+	charmap "e", $21
+	charmap "f", $22
+	charmap "g", $23
+	charmap "h", $24
+	charmap "i", $25
+	charmap "j", $26
+	charmap "k", $27
+	charmap "l", $28
+	charmap "m", $29
+	charmap "n", $2a
+	charmap "o", $2b
+	charmap "p", $2c
+	charmap "q", $2d
+	charmap "r", $2e
+	charmap "s", $2f
+	charmap "t", $30
+	charmap "u", $31
+	charmap "v", $32
+	charmap "w", $33
+	charmap "x", $34
+	charmap "y", $35
+	charmap "z", $36
+	charmap "/", $37
+	charmap ".", $38

@@ -86,8 +86,8 @@ ENDR
 
 LCD::
 	ld a, [wGameState]
-	cp GAME_STATE_TITLE
-	jr z, .done
+	cp GAME_STATE_START
+	jr c, .done
 	ldh a, [rLY]
 	cp 112
 	jr c, .s0

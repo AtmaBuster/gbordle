@@ -134,30 +134,6 @@ _Start::
 	ldh [rLYC], a
 	ei
 
-; load title tilemap and attrmap
-	ld hl, TitleTilemap
-	ld de, wTilemap
-	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
-	call CopyBytes
-	ldh a, [hCGB]
-	and a
-	jr z, .check_sgb
-	ld hl, TitleAttrmap
-	ld de, wAttrmap
-	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
-	call CopyBytes
-	jr .finish_title
-
-.check_sgb
-	ldh a, [hSGB]
-	and a
-	jr z, .finish_title ; DMG
-	call SetupSGB
-	ld hl, SGBPacket_Title
-	call SendSGBPackets
-
-.finish_title
-	call ResetDMGSGBColors
 ; init RNG
 	ld a, 1
 	ldh [hRandomA], a
@@ -221,6 +197,7 @@ DisableLCD::
 	bit rLCDC_ENABLE, a
 	ret z
 ; wait for vblank
+	di
 .loop
 	ldh a, [rLY]
 	cp $90
@@ -228,7 +205,7 @@ DisableLCD::
 	ldh a, [rLCDC]
 	res rLCDC_ENABLE, a
 	ldh [rLCDC], a
-	ret
+	reti
 
 InitColorData:
 ; init bg pals
@@ -254,7 +231,7 @@ InitColorData:
 	RGB 31,31,31, 11,22,15, 08,15,11, 31,31,31
 	RGB 31,31,31, 29,25,00, 22,19,00, 31,31,31
 	RGB 31,31,31, 20,20,20, 10,10,10, 31,31,31
-	RGB 00,00,00, 00,00,00, 00,00,00, 00,00,00
+	RGB 31,31,31, 31,15,18, 31,00,08, 00,00,00
 	RGB 00,00,00, 00,00,00, 00,00,00, 00,00,00
 	RGB 00,00,00, 00,00,00, 00,00,00, 00,00,00
 	RGB 00,00,00, 00,00,00, 00,00,00, 00,00,00
@@ -447,8 +424,14 @@ GameLoop::
 .DoGameLoop:
 ; check game state
 	ld a, [wGameState]
-	and a ; GAME_STATE_TITLE
+	and a ; GAME_STATE_INIT_TITLE
+	jp z, InitTitleScreen
+	dec a ; GAME_STATE_TITLE
 	jp z, TitleScreen
+	dec a ; GAME_STATE_INIT_CREDITS
+	jp z, InitCreditsScreen
+	dec a ; GAME_STATE_CREDITS
+	jp z, CreditsScreen
 	dec a ; GAME_STATE_START
 	jp z, .StartGame
 	dec a ; GAME_STATE_GUESS
@@ -1181,20 +1164,66 @@ endr
 	pop af
 	ret
 
+InitTitleScreen:
+	ld hl, wTilemap
+	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
+	xor a
+	call ByteFill
+; load title screen
+	hlcoord 0, 2
+	ld c, 80 ; 20 x 4
+	ld a, $80 ; first tile
+.title_tile_loop
+	ld [hli], a
+	inc a
+	dec c
+	jr nz, .title_tile_loop
+	hlcoord 4, 12
+	ld de, TitleStrings.one
+	call PlaceString
+	hlcoord 8, 17
+	ld de, TitleStrings.two
+	call PlaceString
+	ldh a, [hCGB]
+	and a
+	jr z, .check_sgb
+	hlcoord 0, 2, wAttrmap
+	ld bc, 80
+	ld a, 4
+	call ByteFill
+	jr .finish_title
+
+.check_sgb
+	ldh a, [hSGB]
+	and a
+	jr z, .finish_title ; DMG
+	call SetupSGB
+	ld hl, SGBPacket_Title
+	call SendSGBPackets
+
+.finish_title
+	call ResetDMGSGBColors
+	ld hl, wGameState
+	inc [hl]
+	ret
+
 TitleScreen:
 	ldh a, [hJoyDown]
+	cp SELECT
+	jr z, .go_to_credits
 	cp A_BUTTON
 	jr z, .done
 	cp START
 	ret nz
 .done
-	ld hl, wGameState
-	inc [hl]
+	ld a, GAME_STATE_START
+	ld [wGameState], a
 ; clear tilemap and attrmap
 	ld hl, wTilemap
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT * 2
 	xor a
 	call ByteFill
+	call LoadLetterTiles
 	ldh a, [hSGB]
 	and a
 	ret z
@@ -1202,6 +1231,58 @@ TitleScreen:
 	ld hl, SGBPacket_Game
 	call SendSGBPackets
 	call ResetDMGSGBColors
+	ret
+
+.go_to_credits
+	ld a, GAME_STATE_INIT_CREDITS
+	ld [wGameState], a
+	ret
+
+InitCreditsScreen:
+	ld hl, wTilemap
+	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
+	xor a
+	call ByteFill
+
+	hlcoord 0, 0
+	ld de, CreditsStrings.one ; Programming:
+	call PlaceString
+	hlcoord 4, 1
+	ld de, CreditsStrings.two ; AtmaBuster
+	call PlaceString
+	hlcoord 0, 3
+	ld de, CreditsStrings.three ; Title art:
+	call PlaceString
+	hlcoord 4, 4
+	ld de, CreditsStrings.four ; susieq
+	call PlaceString
+	hlcoord 1, 6
+	ld de, CreditsStrings.five ; twitter.com/
+	call PlaceString
+	hlcoord 1, 7
+	ld de, CreditsStrings.six ; susiesshitart
+	call PlaceString
+	hlcoord 0, 14
+	ld de, CreditsStrings.seven ; Source code:
+	call PlaceString
+	hlcoord 1, 16
+	ld de, CreditsStrings.eight ; github.com/
+	call PlaceString
+	hlcoord 1, 17
+	ld de, CreditsStrings.nine ; AtmaBuster/gbordle
+	call PlaceString
+
+	ld hl, wGameState
+	inc [hl]
+	ret
+
+CreditsScreen:
+	ldh a, [hJoyDown]
+	and A_BUTTON | B_BUTTON | SELECT | START
+	ret z
+.done
+	ld a, GAME_STATE_INIT_TITLE
+	ld [wGameState], a
 	ret
 
 NotLongEnoughString:
@@ -1215,6 +1296,32 @@ YouWinString:
 
 YouLostString:
 	db "LOSS :@"
+
+TitleStrings:
+.one
+	db "Press  START@"
+.two
+	db "Credits: SEL@"
+
+CreditsStrings:
+.one
+	db "Programming:@"
+.two
+	db "AtmaBuster@"
+.three
+	db "Title art:@"
+.four
+	db "susieq@"
+.five
+	db "twitter.com/@"
+.six
+	db "susiesshitart@"
+.seven
+	db "Source code:@"
+.eight
+	db "github.com/@"
+.nine
+	db "AtmaBuster/gbordle@"
 
 SECTION "Graphics", ROM0
 Font8x8::     INCBIN "gfx/font8.2bpp"
