@@ -1315,7 +1315,7 @@ CreditsStrings:
 .five
 	db "twitter.com/@"
 .six
-	db "susiesshitart@"
+	db "susieqtart@"
 .seven
 	db "Source code:@"
 .eight
